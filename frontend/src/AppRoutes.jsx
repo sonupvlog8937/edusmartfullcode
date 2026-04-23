@@ -24,6 +24,7 @@ const StudentAttendanceList = lazy(() => import("./school/components/attendance/
 const Schedule = lazy(() => import("./school/components/periods/Schedule"));
 const Examinations = lazy(() => import("./school/components/examinations/Examinations"));
 const NoticeSchool = lazy(() => import("./school/components/notice/NoticeSchool"));
+const AdmissionEnquiry = lazy(() => import("./school/components/front-office/AdmissionEnquiry"));
 
 const Student = lazy(() => import("./student/Student"));
 const StudentDetails = lazy(() => import("./student/components/student details/StudentDetails"));
@@ -56,6 +57,7 @@ export default function AppRoutes() {
           <Route path="attendance-student/:studentId" element={<AttendanceDetails />} />
           <Route path="examinations" element={<Examinations />} />
           <Route path="notice" element={<NoticeSchool />} />
+          <Route path="front-office/admission-enquiry" element={<AdmissionEnquiry />} />
         </Route>
 
         <Route path="student" element={<ProtectedRoute allowedRoles={["STUDENT"]}><Student /></ProtectedRoute>}>

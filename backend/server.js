@@ -16,6 +16,7 @@ const examRouter =  require('./router/examination.router')
 const attendanceRoutes = require('./router/attendance.router');
 const periodRoutes = require("./router/period.router");
 const noticeRoutes = require("./router/notice.router");
+const admissionEnquiryRoutes = require("./router/admissionEnquiry.router");
 const authMiddleware = require("./auth/auth");
 const { authCheck } = require("./controller/auth.controller");
 
@@ -58,6 +59,7 @@ app.use('/api/examination', examRouter)
 app.use('/api/attendance', attendanceRoutes)
 app.use('/api/period',  periodRoutes)
 app.use('/api/notices', noticeRoutes)
+app.use('/api/admission-enquiry', admissionEnquiryRoutes)
 
 app.get('/api/auth/check',authCheck)
 
