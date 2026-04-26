@@ -149,7 +149,7 @@ export default function Login() {
                     </Select>
                 </FormControl>
                     <TextField fullWidth sx={{ marginTop: "10px" }} id="outlined-basic"
-                    label="Email" variant="outlined"
+                    label="Email / Username" variant="outlined"
                     name="email"
                     value={Formik.values.email}
                     onChange={Formik.handleChange}

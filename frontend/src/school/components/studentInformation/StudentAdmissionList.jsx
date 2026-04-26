@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -39,6 +39,7 @@ import {
   Person as PersonIcon,
   Group as GroupIcon,
 } from '@mui/icons-material';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   fetchStudents,
   fetchDropdownOptions,
@@ -46,13 +47,16 @@ import {
   deleteStudent,
   setFilters,
   clearMessages,
+  clearLoginCredentials,
 } from '../../../state/studentAdmissionSlice';
-import { useNavigate } from 'react-router-dom';
 import CustomizedSnackbars from '../../../basic utility components/CustomizedSnackbars';
+import StudentAdmissionDialog from './StudentAdmissionDialog';
+import LoginDetailsDialog from './LoginDetailsDialog';
 
 const StudentAdmissionList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const {
     students,
@@ -63,11 +67,16 @@ const StudentAdmissionList = () => {
     loading,
     error,
     successMsg,
+    loginCredentials,
   } = useSelector((state) => state.studentAdmission);
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [dialogMode, setDialogMode] = useState('add');
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchDropdownOptions());
@@ -77,6 +86,18 @@ const StudentAdmissionList = () => {
   useEffect(() => {
     dispatch(fetchStudents(filters));
   }, [dispatch, filters]);
+
+  // Handle edit from detail view
+  useEffect(() => {
+    if (location.state?.editStudentId) {
+      const student = students.find(s => s._id === location.state.editStudentId);
+      if (student) {
+        handleEditStudent(student);
+      }
+      // Clear the state
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (error) {
@@ -88,8 +109,14 @@ const StudentAdmissionList = () => {
       dispatch(clearMessages());
       dispatch(fetchStudents(filters));
       dispatch(fetchStudentStats());
+      setDialogOpen(false); // Close dialog on success
+      
+      // Show login credentials dialog if available
+      if (loginCredentials) {
+        setLoginDialogOpen(true);
+      }
     }
-  }, [error, successMsg, dispatch, filters]);
+  }, [error, successMsg, loginCredentials, dispatch, filters]);
 
   const handleSearchChange = (e) => {
     setSearchInput(e.target.value);
@@ -115,6 +142,27 @@ const StudentAdmissionList = () => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       dispatch(deleteStudent(id));
     }
+  };
+
+  const handleAddStudent = () => {
+    setSelectedStudent(null);
+    setDialogMode('add');
+    setDialogOpen(true);
+  };
+
+  const handleEditStudent = (student) => {
+    setSelectedStudent(student);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
+  const handleViewStudent = (student) => {
+    navigate(`/school/students/admission/view/${student._id}`);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setSelectedStudent(null);
   };
 
   const handleRefresh = () => {
@@ -146,7 +194,7 @@ const StudentAdmissionList = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => navigate('/school/student-information/admission/add')}
+          onClick={handleAddStudent}
           sx={{
             backgroundColor: '#6a1b9a',
             '&:hover': { backgroundColor: '#4a148c' },
@@ -321,9 +369,9 @@ const StudentAdmissionList = () => {
                   }}
                 >
                   <MenuItem value="">All</MenuItem>
-                  {dropdownOptions.sections?.map((sec) => (
-                    <MenuItem key={sec._id} value={sec._id}>
-                      {sec.name}
+                  {['A', 'B', 'C', 'D', 'E'].map((s) => (
+                    <MenuItem key={s} value={s} sx={{ fontSize: '0.813rem' }}>
+                      Section {s}
                     </MenuItem>
                   ))}
                 </Select>
@@ -386,16 +434,17 @@ const StudentAdmissionList = () => {
           <Table>
             <TableHead sx={{ backgroundColor: '#f3e5f5' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Photo</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Admission No</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Roll Number</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Student Name</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Class</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Section</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Gender</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Mobile</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a' }} align="center">
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Photo</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Admission No</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Roll Number</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Student Name</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Class</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Section</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Gender</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Mobile</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>State</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#6a1b9a', fontSize: '0.813rem' }} align="center">
                   Actions
                 </TableCell>
               </TableRow>
@@ -403,13 +452,13 @@ const StudentAdmissionList = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 5 }}>
+                  <TableCell colSpan={11} align="center" sx={{ py: 5 }}>
                     <CircularProgress sx={{ color: '#6a1b9a' }} />
                   </TableCell>
                 </TableRow>
               ) : students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 5 }}>
+                  <TableCell colSpan={11} align="center" sx={{ py: 5 }}>
                     <Typography variant="body1" color="textSecondary">
                       No students found
                     </Typography>
@@ -422,45 +471,60 @@ const StudentAdmissionList = () => {
                     hover
                     sx={{ '&:hover': { backgroundColor: '#f9f5fb' } }}
                   >
-                    <TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>
                       <Avatar
                         src={student.photo}
                         alt={student.firstName}
-                        sx={{ bgcolor: '#6a1b9a' }}
+                        sx={{ bgcolor: '#6a1b9a', width: 32, height: 32 }}
                       >
                         {student.firstName?.charAt(0)}
                       </Avatar>
                     </TableCell>
-                    <TableCell>{student.admissionNo}</TableCell>
-                    <TableCell>{student.rollNumber || '-'}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>{student.admissionNo}</TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>{student.rollNumber || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>
                       {student.firstName} {student.lastName}
                     </TableCell>
-                    <TableCell>{student.class?.name || '-'}</TableCell>
-                    <TableCell>{student.section?.name || '-'}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>{student.class?.class_text || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>{student.section?.name || student.section || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>
                       <Chip
-                        label={student.gender}
+                        label={student.gender || '-'}
                         size="small"
                         sx={{
                           backgroundColor: student.gender === 'Male' ? '#e1bee7' : '#f3e5f5',
                           color: '#6a1b9a',
+                          fontSize: '0.75rem',
+                          height: '22px',
                         }}
                       />
                     </TableCell>
-                    <TableCell>{student.mobileNumber || '-'}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>{student.mobileNumber || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>
+                      <Chip
+                        label={student.state || '-'}
+                        size="small"
+                        sx={{
+                          backgroundColor: '#e8eaf6',
+                          color: '#3f51b5',
+                          fontSize: '0.75rem',
+                          height: '22px',
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.813rem' }}>
                       <Chip
                         label={student.status || 'Active'}
                         size="small"
                         color={student.status === 'Active' ? 'success' : 'default'}
+                        sx={{ fontSize: '0.75rem', height: '22px' }}
                       />
                     </TableCell>
                     <TableCell align="center">
                       <Tooltip title="View">
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/school/student-information/admission/view/${student._id}`)}
+                          onClick={() => handleViewStudent(student)}
                           sx={{ color: '#6a1b9a' }}
                         >
                           <ViewIcon />
@@ -469,7 +533,7 @@ const StudentAdmissionList = () => {
                       <Tooltip title="Edit">
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/school/student-information/admission/edit/${student._id}`)}
+                          onClick={() => handleEditStudent(student)}
                           sx={{ color: '#6a1b9a' }}
                         >
                           <EditIcon />
@@ -508,11 +572,29 @@ const StudentAdmissionList = () => {
         />
       </Paper>
 
-      <CustomizedSnackbars
-        open={snackbar.open}
-        message={snackbar.message}
-        severity={snackbar.severity}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      {snackbar.open && (
+        <CustomizedSnackbars
+          type={snackbar.severity}
+          message={snackbar.message}
+          reset={() => setSnackbar({ ...snackbar, open: false })}
+        />
+      )}
+
+      <StudentAdmissionDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        student={selectedStudent}
+        mode={dialogMode}
+      />
+
+      <LoginDetailsDialog
+        open={loginDialogOpen}
+        onClose={() => {
+          setLoginDialogOpen(false);
+          dispatch(clearLoginCredentials());
+        }}
+        studentName={loginCredentials?.studentName || ''}
+        loginCredentials={loginCredentials}
       />
     </Box>
   );

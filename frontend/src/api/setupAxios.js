@@ -14,7 +14,18 @@ export function setupAxios() {
   axios.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem("token");
-      if (token) {
+      const url = String(config.url || "");
+      
+      // Skip token for public routes
+      const isPublicRoute = 
+        url.includes("/api/school/public/") ||
+        url.includes("/api/students/dropdown-options-public") ||
+        url.includes("/login") ||
+        url.includes("/register");
+      
+      console.log('🔍 Axios Request:', { url, isPublicRoute, hasToken: !!token });
+      
+      if (token && !isPublicRoute) {
         config.headers.Authorization = token;
       }
       return config;
@@ -31,8 +42,16 @@ export function setupAxios() {
       const isAuthRoute =
         url.includes("/login") ||
         url.includes("/register");
+      
+      const isPublicRoute = 
+        url.includes("/api/school/public/") ||
+        url.includes("/api/students/dropdown-options-public");
 
-      if ((status === 401 || status === 403) && !isAuthRoute) {
+      console.log('❌ Axios Error:', { status, url, isAuthRoute, isPublicRoute });
+
+      // Only redirect to login if NOT a public route or auth route
+      if ((status === 401 || status === 403) && !isAuthRoute && !isPublicRoute) {
+        console.log('🔄 Redirecting to login...');
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         const reason = status === 403 ? "forbidden" : "expired";

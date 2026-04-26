@@ -28,6 +28,7 @@ const resetMessage  =()=>{
         school_name:"",
         email: "",
         owner_name:"",
+        address:"",
         password:"",
         confirm_password:""
     }
@@ -43,6 +44,7 @@ const resetMessage  =()=>{
                 fd.append("school_name",values.school_name)
                 fd.append("email",values.email)
                 fd.append("owner_name",values.owner_name)
+                fd.append("address",values.address)
                 fd.append("password", values.password)
                
                 axios.post(`${baseUrl}/school/register`,fd).then(resp=>{
@@ -122,6 +124,16 @@ const resetMessage  =()=>{
                     onBlur={Formik.handleBlur} />
                 {Formik.touched.owner_name && Formik.errors.owner_name&& <p style={{ color: "red", textTransform: "capitalize" }}>
                     {Formik.errors.owner_name}</p>}
+
+                <TextField fullWidth sx={{ marginTop: "10px" }} id="filled-basic"
+                    label="School Address" variant="outlined" name="address"
+                    multiline
+                    rows={3}
+                    value={Formik.values.address}
+                    onChange={Formik.handleChange}
+                    onBlur={Formik.handleBlur} />
+                {Formik.touched.address && Formik.errors.address&& <p style={{ color: "red", textTransform: "capitalize" }}>
+                    {Formik.errors.address}</p>}
 
                     <TextField fullWidth sx={{ marginTop: "10px" }} id="filled-basic"
                     label="Password"

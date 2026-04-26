@@ -200,7 +200,7 @@ const NAV_ITEMS = [
     {
         label: 'Student Information', icon: GroupAddIcon,
         children: [
-            { link: '/school/students', label: 'Student Details' },
+            // { link: '/school/students', label: 'Student Details' },
             { link: '/school/students/admission', label: 'Student Admission' },
             { link: '/school/students/online-admission', label: 'Online Admission' },
             { link: '/school/students/disabled', label: 'Disabled Students' },
@@ -215,11 +215,15 @@ const NAV_ITEMS = [
         label: 'Fees Collection', icon: PaymentIcon,
         children: [
             { link: '/school/fees/collect', label: 'Collect Fees' },
+            { link: '/school/fees/demand-bill', label: 'Demand Bill Print' },
+            { link: '/school/fees/offline-bank-payments', label: 'Offline Bank Payments' },
             { link: '/school/fees/search', label: 'Search Fees Payment' },
+            { link: '/school/fees/search-due', label: 'Search Due Fees' },
+            { link: '/school/fees/master', label: 'Fees Master' },
             { link: '/school/fees/group', label: 'Fees Group' },
             { link: '/school/fees/type', label: 'Fees Type' },
             { link: '/school/fees/discount', label: 'Fees Discount' },
-            { link: '/school/fees/reminder', label: 'Fees Reminder' },
+            { link: '/school/fees/carry-forward', label: 'Fees Carry Forward' },
         ],
     },
     {
@@ -676,6 +680,10 @@ export default function School() {
     const handleNavigation = (link) => {
         if (!link) return;
         if (link === '/logout') { setConfirmLogout(true); return; }
+        
+        // Scroll to top before navigation for smooth transition
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
         navigate(link);
         setMobileOpen(false); // auto-close mobile drawer after navigation
     };

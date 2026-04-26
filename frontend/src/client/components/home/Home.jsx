@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Typography,
   Grid2,
@@ -29,10 +30,12 @@ import {
   alpha,
   Snackbar,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import Carousel from './carousel/Carousel';
-import Gallery from './gallery/Gallery';
+import { fetchTopSchools } from '../../../state/publicSchoolSlice';
+import { baseUrl } from '../../../environment';
 
 // Icons
 import MenuIcon from '@mui/icons-material/Menu';
@@ -62,6 +65,16 @@ import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { APP_NAME, LOGO_URL } from '../../../branding';
+
+// Helper function to get school image URL
+const getSchoolImageSrc = (imageValue) => {
+  if (!imageValue) return "";
+  // If it's already a full URL (Cloudinary), return as is
+  if (/^https?:\/\//i.test(imageValue)) return imageValue;
+  // Otherwise, construct local path (for backward compatibility)
+  const apiOrigin = baseUrl.replace(/\/api\/?$/, "");
+  return `${apiOrigin}/images/uploaded/school/${imageValue}`;
+};
 
 // ─── Animated Counter ────────────────────────────────────────────────
 const AnimatedCounter = ({ target, suffix = '' }) => {
@@ -158,6 +171,9 @@ const SectionHeading = ({ badge, title, subtitle, align = 'center' }) => {
 // ─── Main Component ───────────────────────────────────────────────────
 const Home = () => {
   const theme = useTheme();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { topSchools, topSchoolsLoading } = useSelector((state) => state.publicSchool);
   const pageBg = theme.palette.background.default;
   const paperBg = theme.palette.background.paper;
   const dividerColor = theme.palette.divider;
@@ -175,8 +191,9 @@ const Home = () => {
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
+    dispatch(fetchTopSchools());
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     const onHashNavigate = () => {
@@ -752,7 +769,7 @@ const Home = () => {
         </Container>
       </Box>
 
-      {/* ── 7. Gallery / Registered Schools ── */}
+      {/* ── 7. Top 10 Registered Schools ── */}
       <Box id="gallery" sx={{ scrollMarginTop: 92, py: { xs: 8, md: 12 }, bgcolor: pageBg }}>
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 6, flexWrap: 'wrap', gap: 2 }}>
@@ -764,6 +781,7 @@ const Home = () => {
             <Button
               variant="outlined"
               endIcon={<ArrowForwardIcon />}
+              onClick={() => navigate('/schools')}
               sx={{
                 borderRadius: 2,
                 borderColor: dividerColor,
@@ -779,7 +797,79 @@ const Home = () => {
               View All Schools
             </Button>
           </Box>
-          <Gallery />
+
+          {/* Schools Grid */}
+          {topSchoolsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress sx={{ color: 'primary.main' }} />
+            </Box>
+          ) : topSchools && topSchools.length > 0 ? (
+            <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true }}>
+              <Grid2 container spacing={3}>
+                {topSchools.slice(0, 10).map((school, i) => (
+                  <Grid2 size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }} key={school._id}>
+                    <motion.div variants={itemUp}>
+                      <Card
+                        sx={{
+                          height: '100%',
+                          borderRadius: 3,
+                          border: `1px solid ${dividerColor}`,
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            transform: 'translateY(-8px)',
+                            boxShadow: `0 12px 24px ${alpha(theme.palette.primary.main, 0.15)}`,
+                            borderColor: 'primary.main',
+                          },
+                        }}
+                        onClick={() => navigate(`/school/${school._id}`)}
+                      >
+                        <CardContent sx={{ p: 2, textAlign: 'center' }}>
+                          <Avatar
+                            src={getSchoolImageSrc(school.school_image)}
+                            alt={school.school_name}
+                            sx={{
+                              width: 80,
+                              height: 80,
+                              mx: 'auto',
+                              mb: 1.5,
+                              border: `3px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                            }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 700,
+                              color: headingColor,
+                              mb: 0.5,
+                              fontSize: '0.875rem',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              minHeight: '2.5em',
+                            }}
+                          >
+                            {school.school_name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                            {school.owner_name}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Grid2>
+                ))}
+              </Grid2>
+            </motion.div>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <SchoolIcon sx={{ fontSize: 80, color: '#e0e0e0', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">
+                No schools registered yet
+              </Typography>
+            </Box>
+          )}
         </Container>
       </Box>
 

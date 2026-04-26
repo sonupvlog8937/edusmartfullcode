@@ -10,6 +10,10 @@ const Contact = lazy(() => import("./client/components/contact/Contact"));
 const Login = lazy(() => import("./client/components/login/Login"));
 const Register = lazy(() => import("./client/components/register/Register"));
 const Logout = lazy(() => import("./client/components/logout/Logout"));
+const AllSchoolsPage = lazy(() => import("./client/components/schools/AllSchoolsPage"));
+const SchoolDetailsPage = lazy(() => import("./client/components/schools/SchoolDetailsPage"));
+const ApplyAdmissionPage = lazy(() => import("./client/components/schools/ApplyAdmissionPage"));
+const ApplicationSuccessPage = lazy(() => import("./client/components/schools/ApplicationSuccessPage"));
 
 const School = lazy(() => import("./school/School"));
 const SchoolDashboard = lazy(() => import("./school/components/dashboard/SchoolDashboard"));
@@ -36,6 +40,17 @@ const FeesCollection = lazy(() => import("./school/components/fees/FeesCollectio
 const TransportRoutes = lazy(() => import("./school/components/transport/TransportRoutes"));
 const StudyMaterialList = lazy(() => import("./school/components/studyMaterial/StudyMaterialList"));
 const LeaveManagement = lazy(() => import("./school/components/leave/LeaveManagement"));
+const StudentAdmissionList = lazy(() => import("./school/components/studentInformation/StudentAdmissionList"));
+const StudentAdmissionForm = lazy(() => import("./school/components/studentInformation/StudentAdmissionForm"));
+const StudentDetailView = lazy(() => import("./school/components/studentInformation/StudentDetailView"));
+const StudentCategories = lazy(() => import("./school/components/studentInformation/StudentCategories"));
+const StudentHouse = lazy(() => import("./school/components/studentInformation/StudentHouse"));
+const DisableReason = lazy(() => import("./school/components/studentInformation/DisableReason"));
+const StudentBulkDelete = lazy(() => import("./school/components/studentInformation/StudentBulkDelete"));
+const MultiClassStudent = lazy(() => import("./school/components/studentInformation/MultiClassStudent"));
+const OnlineAdmission = lazy(() => import("./school/components/studentInformation/OnlineAdmission"));
+const ViewOnlineApplication = lazy(() => import("./school/components/studentInformation/ViewOnlineApplication"));
+const DisabledStudents = lazy(() => import("./school/components/studentInformation/DisabledStudents"));
 
 const Student = lazy(() => import("./student/Student"));
 const StudentDetails = lazy(() => import("./student/components/student details/StudentDetails"));
@@ -107,6 +122,18 @@ export default function AppRoutes() {
           <Route path="transport/routes" element={<TransportRoutes />} />
           <Route path="study-material/upload" element={<StudyMaterialList />} />
           <Route path="leave/approve" element={<LeaveManagement />} />
+          <Route path="students/admission" element={<StudentAdmissionList />} />
+          <Route path="students/admission/add" element={<StudentAdmissionForm />} />
+          <Route path="students/admission/view/:id" element={<StudentDetailView />} />
+          <Route path="students/admission/:mode/:id" element={<StudentAdmissionForm />} />
+          <Route path="students/online-admission" element={<OnlineAdmission />} />
+          <Route path="students/online-admission/view/:id" element={<ViewOnlineApplication />} />
+          <Route path="students/multi-class" element={<MultiClassStudent />} />
+          <Route path="students/disabled" element={<DisabledStudents />} />
+          <Route path="students/bulk-delete" element={<StudentBulkDelete />} />
+          <Route path="students/category" element={<StudentCategories />} />
+          <Route path="students/house" element={<StudentHouse />} />
+          <Route path="students/disable" element={<DisableReason />} />
         </Route>
 
         <Route path="student" element={<ProtectedRoute allowedRoles={["STUDENT"]}><Student /></ProtectedRoute>}>
@@ -172,6 +199,10 @@ export default function AppRoutes() {
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
           <Route path="logout" element={<Logout />} />
+          <Route path="schools" element={<AllSchoolsPage />} />
+          <Route path="school/:id" element={<SchoolDetailsPage />} />
+          <Route path="school/:id/apply" element={<ApplyAdmissionPage />} />
+          <Route path="application-success" element={<ApplicationSuccessPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

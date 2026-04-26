@@ -45,14 +45,29 @@ export const fetchDropdownOptions = createAsyncThunk(
   }
 );
 
+/** Fetch dropdown options (PUBLIC - no auth required) */
+export const fetchDropdownOptionsPublic = createAsyncThunk(
+  "studentAdmission/fetchDropdownOptionsPublic",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get("/api/students/dropdown-options-public");
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 /** Add new student */
 export const addStudent = createAsyncThunk(
   "studentAdmission/addStudent",
   async (studentData, { rejectWithValue }) => {
     try {
+      console.log('Sending student data to API:', studentData);
       const res = await axios.post("/api/students/add", studentData);
       return res.data;
     } catch (err) {
+      console.error('Add student error:', err.response?.data || err.message);
       return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
@@ -97,6 +112,32 @@ export const fetchStudentStats = createAsyncThunk(
   }
 );
 
+/** Change student or parent password */
+export const changeStudentPassword = createAsyncThunk(
+  "studentAdmission/changePassword",
+  async ({ id, userType, newPassword }, { rejectWithValue }) => {
+    try {
+      const res = await axios.put(`/api/students/${id}/change-password`, { userType, newPassword });
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+/** Generate login credentials for existing student */
+export const generateStudentLogin = createAsyncThunk(
+  "studentAdmission/generateLogin",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(`/api/students/${id}/generate-login`);
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 // ─── Initial State ────────────────────────────────────────────────────────────
 
 const initialState = {
@@ -104,6 +145,7 @@ const initialState = {
   currentStudent: null,
   stats: null,
   pagination: { total: 0, page: 1, limit: 10, pages: 0 },
+  loginCredentials: null, // Store login credentials after student creation
   
   // Dropdown options
   dropdownOptions: {
@@ -118,6 +160,45 @@ const initialState = {
     pickupPoints: [],
     hostels: [],
     rooms: [],
+    states: [
+      'Andhra Pradesh',
+      'Arunachal Pradesh',
+      'Assam',
+      'Bihar',
+      'Chhattisgarh',
+      'Goa',
+      'Gujarat',
+      'Haryana',
+      'Himachal Pradesh',
+      'Jharkhand',
+      'Karnataka',
+      'Kerala',
+      'Madhya Pradesh',
+      'Maharashtra',
+      'Manipur',
+      'Meghalaya',
+      'Mizoram',
+      'Nagaland',
+      'Odisha',
+      'Punjab',
+      'Rajasthan',
+      'Sikkim',
+      'Tamil Nadu',
+      'Telangana',
+      'Tripura',
+      'Uttar Pradesh',
+      'Uttarakhand',
+      'West Bengal',
+      'Andaman and Nicobar Islands',
+      'Chandigarh',
+      'Dadra and Nagar Haveli and Daman and Diu',
+      'Delhi',
+      'Jammu and Kashmir',
+      'Ladakh',
+      'Lakshadweep',
+      'Puducherry',
+    ],
+    feesStructure: [],
   },
 
   // Filters
@@ -161,6 +242,9 @@ const studentAdmissionSlice = createSlice({
     clearCurrentStudent(state) {
       state.currentStudent = null;
     },
+    clearLoginCredentials(state) {
+      state.loginCredentials = null;
+    },
   },
   extraReducers: (builder) => {
     // ── fetchStudents ──────────────────────────────────────────────────────
@@ -198,6 +282,11 @@ const studentAdmissionSlice = createSlice({
     builder.addCase(fetchDropdownOptions.fulfilled, (state, action) => {
       state.dropdownOptions = { ...state.dropdownOptions, ...action.payload };
     });
+    
+    // ── fetchDropdownOptionsPublic (same as above, for public use) ─────────
+    builder.addCase(fetchDropdownOptionsPublic.fulfilled, (state, action) => {
+      state.dropdownOptions = { ...state.dropdownOptions, ...action.payload };
+    });
 
     // ── addStudent ─────────────────────────────────────────────────────────
     builder
@@ -210,6 +299,12 @@ const studentAdmissionSlice = createSlice({
         state.submitLoading = false;
         state.successMsg = action.payload.message || "Student added successfully";
         if (action.payload.data) state.students.unshift(action.payload.data);
+        if (action.payload.loginCredentials) {
+          state.loginCredentials = {
+            ...action.payload.loginCredentials,
+            studentName: action.payload.data ? `${action.payload.data.firstName} ${action.payload.data.lastName}` : ''
+          };
+        }
       })
       .addCase(addStudent.rejected, (state, action) => {
         state.submitLoading = false;
@@ -258,10 +353,26 @@ const studentAdmissionSlice = createSlice({
     builder.addCase(fetchStudentStats.fulfilled, (state, action) => {
       state.stats = action.payload;
     });
+
+    // ── changeStudentPassword ──────────────────────────────────────────────
+    builder
+      .addCase(changeStudentPassword.pending, (state) => {
+        state.submitLoading = true;
+        state.error = null;
+        state.successMsg = null;
+      })
+      .addCase(changeStudentPassword.fulfilled, (state, action) => {
+        state.submitLoading = false;
+        state.successMsg = action.payload.message || "Password changed successfully";
+      })
+      .addCase(changeStudentPassword.rejected, (state, action) => {
+        state.submitLoading = false;
+        state.error = action.payload || "Failed to change password";
+      });
   },
 });
 
-export const { setFilters, clearMessages, clearCurrentStudent } = studentAdmissionSlice.actions;
+export const { setFilters, clearMessages, clearCurrentStudent, clearLoginCredentials } = studentAdmissionSlice.actions;
 
 // ─── Selectors ────────────────────────────────────────────────────────────────
 export const selectStudentFilters = (state) => state.studentAdmission.filters;

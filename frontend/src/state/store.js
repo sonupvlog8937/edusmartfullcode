@@ -7,6 +7,9 @@ import postalRecordReducer     from "./postalRecordSlice";
 import complaintReducer        from "./complaintSlice";
 import setupFrontOfficeReducer from "./setupFrontOfficeSlice";
 import studentAdmissionReducer from "./studentAdmissionSlice";
+import studentSettingsReducer  from "./studentSettingsSlice";
+import studentManagementReducer from "./studentManagementSlice";
+import publicSchoolReducer     from "./publicSchoolSlice";
 
 export default configureStore({
     reducer: {
@@ -18,5 +21,8 @@ export default configureStore({
         complaint:        complaintReducer,
         setupFrontOffice: setupFrontOfficeReducer,
         studentAdmission: studentAdmissionReducer,
+        studentSettings:  studentSettingsReducer,
+        studentManagement: studentManagementReducer,
+        publicSchool:     publicSchoolReducer,
     }
 });

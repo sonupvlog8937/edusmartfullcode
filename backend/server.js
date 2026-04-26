@@ -34,6 +34,9 @@ const parentRoutes = require("./router/role/parent.router");
 const superAdminRoutes = require("./router/role/superAdmin.router");
 const receptionistRoutes = require("./router/role/receptionist.router");
 const librarianRoutes = require("./router/role/librarian.router");
+const studentAdmissionRoutes = require('./router/studentInformation/studentAdmission.router');
+const studentSettingsRoutes = require('./router/studentInformation/studentSettings.router');
+const onlineAdmissionRoutes = require('./router/studentInformation/onlineAdmission.router');
 const { authCheck } = require("./controller/auth.controller");
 
 const app = express();
@@ -93,6 +96,10 @@ app.use('/api/parent', parentRoutes)
 app.use('/api/super-admin', superAdminRoutes)
 app.use('/api/receptionist', receptionistRoutes)
 app.use('/api/librarian', librarianRoutes)
+app.use('/api/students', studentAdmissionRoutes)
+app.use('/api/student-settings', studentSettingsRoutes)
+app.use('/api/school/settings', studentSettingsRoutes)
+app.use('/api/school/online-admissions', onlineAdmissionRoutes)
 
 app.get('/api/auth/check',authCheck)
 

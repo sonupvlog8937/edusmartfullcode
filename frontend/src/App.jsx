@@ -11,6 +11,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import darkTheme from "./basic utility components/darkTheme";
 import lightTheme from "./basic utility components/lightTheme";
 import ThemeToggleButton from "./basic utility components/ThemeToggleButton";
+import ScrollToTop from "./components/system/ScrollToTop";
 import { useContext } from "react";
 import AppRoutes from "./AppRoutes";
 
@@ -22,6 +23,7 @@ function App() {
       <CssBaseline enableColorScheme />
       <ThemeToggleButton />
       <BrowserRouter>
+        <ScrollToTop />
         <AppRoutes />
       </BrowserRouter>
     </ThemeProvider>

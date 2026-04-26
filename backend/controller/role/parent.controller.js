@@ -46,9 +46,26 @@ module.exports = {
     try {
       const { email, password } = req.body;
 
-      const parent = await Parent.findOne({ email }).populate("school", "school_name").populate("children", "name roll_number student_class");
+      // Support login via email OR username - check both @edusmart.com and @school.com
+      let query;
+      if (email && email.includes('@')) {
+        query = { email };
+      } else {
+        query = {
+          $or: [
+            { email: `${email}@school.com` },
+          ]
+        };
+      }
+
+      const parent = await Parent.findOne(query)
+        .populate("school", "school_name")
+        .populate("children", "name roll_number student_class");
+      
+      console.log('Parent login attempt - email/username:', email, '| Query:', JSON.stringify(query), '| Found:', parent ? parent.email : 'NOT FOUND');
+      
       if (!parent) {
-        return res.status(404).json({ success: false, message: "Parent not found" });
+        return res.status(404).json({ success: false, message: "Username or Email not found" });
       }
 
       if (parent.status === "Inactive") {
