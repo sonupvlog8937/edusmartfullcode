@@ -72,11 +72,30 @@ export default function Login() {
             }else if(loginType=="student"){
                 url = `${baseUrl}/student/login`
                 navUrl='/student'
+            }else if(loginType=="accountant"){
+                url = `${baseUrl}/accountant/login`
+                navUrl='/accountant'
+            }else if(loginType=="librarian"){
+                url = `${baseUrl}/librarian/login`
+                navUrl='/librarian'
+            }else if(loginType=="receptionist"){
+                url = `${baseUrl}/receptionist/login`
+                navUrl='/receptionist'
+            }else if(loginType=="parent"){
+                url = `${baseUrl}/parent/login`
+                navUrl='/parent'
+            }else if(loginType=="super_admin"){
+                url = `${baseUrl}/super-admin/login`
+                navUrl='/super-admin'
+            }else if(loginType=="vice_admin"){
+                url = `${baseUrl}/vice-admin/login`
+                navUrl='/vice-admin'
             }
                 axios.post(url, {...values}).then(resp=>{    
                     setMessage(resp.data.message)
                     setType("success")
-                    let token = resp.headers.get("Authorization");
+                    // Support both header token and body token
+                    let token = resp.headers.get("Authorization") || resp.data.token;
                     if(resp.data.success){
                         localStorage.setItem("token", token);
                         localStorage.setItem("user", JSON.stringify(resp.data.user));
@@ -120,7 +139,13 @@ export default function Login() {
                        
                         <MenuItem value={"student"}>Student</MenuItem>
                          <MenuItem  value={'teacher'}>Teacher</MenuItem>
-                         <MenuItem  value={'school_owner'}>School Owner</MenuItem>
+                         <MenuItem  value={'parent'}>Parent</MenuItem>
+                         <MenuItem  value={'school_owner'}>Admin (School Owner)</MenuItem>
+                         <MenuItem  value={'accountant'}>Accountant</MenuItem>
+                         <MenuItem  value={'librarian'}>Librarian</MenuItem>
+                         <MenuItem  value={'receptionist'}>Receptionist</MenuItem>
+                         <MenuItem  value={'super_admin'}>Super Admin</MenuItem>
+                         <MenuItem  value={'vice_admin'}>Vice Admin</MenuItem>
                     </Select>
                 </FormControl>
                     <TextField fullWidth sx={{ marginTop: "10px" }} id="outlined-basic"

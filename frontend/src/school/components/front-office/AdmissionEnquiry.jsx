@@ -1,4 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchEnquiries,
+  createEnquiry,
+  updateEnquiry,
+  deleteEnquiry,
+  clearMessages,
+} from "../../../state/admissionEnquirySlice";
 import {
   Alert,
   Box,
@@ -48,6 +56,7 @@ import {
   ListItemIcon,
   ListItemText,
   Backdrop,
+  Autocomplete,
 } from "@mui/material";
 import { alpha, styled, keyframes } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
@@ -91,22 +100,20 @@ import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import HistoryIcon from "@mui/icons-material/History";
 import PrintIcon from "@mui/icons-material/Print";
-import axios from "axios";
-import { baseUrl } from "../../../environment";
 import PageHeader from "../../ui/PageHeader";
 import SectionCard from "../../ui/SectionCard";
 import EmptyState from "../../ui/EmptyState";
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const BRAND = {
-  primary: "#1a3c6e",
-  primaryLight: "#2563b0",
-  accent: "#f59e0b",
-  accentDark: "#d97706",
+  primary: "#7C3AED",
+  primaryLight: "#A78BFA",
+  accent: "#6D28D9",
+  accentDark: "#5B21B6",
   success: "#059669",
-  warning: "#d97706",
+  warning: "#7C3AED",
   error: "#dc2626",
-  info: "#0284c7",
+  info: "#7C3AED",
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -130,30 +137,30 @@ const defaultForm = {
 
 const STATUS_CONFIG = {
   New: {
-    color: "info",
+    color: "secondary",
     icon: FiberNewIcon,
-    bg: "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)",
-    solidBg: "#0284c7",
-    text: "#0369a1",
-    border: "#7dd3fc",
+    bg: "linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)",
+    solidBg: "#7C3AED",
+    text: "#5B21B6",
+    border: "#DDD6FE",
     label: "New",
   },
   Contacted: {
-    color: "primary",
+    color: "secondary",
     icon: PhoneIcon,
-    bg: "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)",
-    solidBg: "#7c3aed",
-    text: "#6d28d9",
-    border: "#c4b5fd",
+    bg: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
+    solidBg: "#6D28D9",
+    text: "#92400E",
+    border: "#A78BFA",
     label: "Contacted",
   },
   "Follow-up": {
-    color: "warning",
+    color: "secondary",
     icon: AccessTimeIcon,
     bg: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
-    solidBg: "#d97706",
-    text: "#b45309",
-    border: "#fcd34d",
+    solidBg: "#7C3AED",
+    text: "#6D28D9",
+    border: "#A78BFA",
     label: "Follow-up",
   },
   Converted: {
@@ -179,16 +186,16 @@ const STATUS_CONFIG = {
 const PRIORITY_CONFIG = {
   High: {
     color: "#dc2626",
-    bg: "#fef2f2",
+    bg: "#F5F3FF",
     border: "#fca5a5",
     dot: "#ef4444",
     label: "High",
   },
   Medium: {
-    color: "#d97706",
-    bg: "#fffbeb",
-    border: "#fcd34d",
-    dot: "#f59e0b",
+    color: "#7C3AED",
+    bg: "#F5F3FF",
+    border: "#A78BFA",
+    dot: "#8B5CF6",
     label: "Medium",
   },
   Low: {
@@ -226,7 +233,7 @@ const GlassCard = styled(Paper)(({ theme }) => ({
     ? "rgba(30,41,59,0.8)"
     : "rgba(255,255,255,0.9)",
   backdropFilter: "blur(12px)",
-  border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+  border: `1px solid ${alpha('#7C3AED', 0.25)}`,
   borderRadius: 16,
   transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
 }));
@@ -252,8 +259,8 @@ const PriorityDot = styled(Box)(({ color }) => ({
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 const getAvatarColor = (name = "") => {
   const colors = [
-    "#1a3c6e", "#7c3aed", "#059669", "#dc2626", "#0284c7",
-    "#d97706", "#db2777", "#0891b2", "#65a30d", "#9333ea",
+    "#4C1D95", "#7c3aed", "#059669", "#dc2626", "#0284c7",
+    "#7C3AED", "#db2777", "#0891b2", "#65a30d", "#9333ea",
   ];
   const idx = name.charCodeAt(0) % colors.length;
   return colors[idx];
@@ -346,7 +353,7 @@ function StatCard({ label, value, icon: Icon, color, trend, trendLabel, loading,
               lineHeight: 1,
               mt: 0.5,
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: { xs: "1.8rem", md: "2.2rem" },
+              fontSize: { xs: "1.5rem", sm: "1.8rem", md: "2.2rem" },
             }}
           >
             {value ?? 0}
@@ -506,17 +513,17 @@ function EnquiryCard({ row, onEdit, onDelete, onViewDetail, onStatusChange, stat
       {/* Top color bar */}
       <Box sx={{ height: 4, background: cfg.solidBg }} />
 
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
         {/* Header */}
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" mb={2}>
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack direction="row" spacing={{ xs: 1, sm: 1.5 }} alignItems="center">
             <Avatar
               sx={{
                 bgcolor: avatarColor,
-                width: 44,
-                height: 44,
+                width: { xs: 38, sm: 44 },
+                height: { xs: 38, sm: 44 },
                 fontWeight: 800,
-                fontSize: "1rem",
+                fontSize: { xs: "0.9rem", sm: "1rem" },
                 boxShadow: `0 4px 12px ${alpha(avatarColor, 0.4)}`,
                 fontFamily: "'DM Sans', sans-serif",
               }}
@@ -527,7 +534,7 @@ function EnquiryCard({ row, onEdit, onDelete, onViewDetail, onStatusChange, stat
               <Typography
                 sx={{
                   fontWeight: 800,
-                  fontSize: "0.92rem",
+                  fontSize: { xs: "0.85rem", sm: "0.92rem" },
                   lineHeight: 1.2,
                   color: "text.primary",
                   fontFamily: "'DM Sans', sans-serif",
@@ -535,7 +542,7 @@ function EnquiryCard({ row, onEdit, onDelete, onViewDetail, onStatusChange, stat
               >
                 {row.studentName}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4, fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>
                 {row.guardianName || "Guardian not added"}
               </Typography>
             </Box>
@@ -559,27 +566,27 @@ function EnquiryCard({ row, onEdit, onDelete, onViewDetail, onStatusChange, stat
         </Stack>
 
         {/* Info Grid */}
-        <Stack spacing={1} mb={2}>
+        <Stack spacing={{ xs: 0.8, sm: 1 }} mb={2}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <Box sx={{ width: 28, display: "flex", justifyContent: "center" }}>
-              <PhoneIcon sx={{ fontSize: 14, color: "text.disabled" }} />
+              <PhoneIcon sx={{ fontSize: { xs: 13, sm: 14 }, color: "text.disabled" }} />
             </Box>
-            <Typography variant="body2" sx={{ fontSize: "0.82rem", fontWeight: 500, flex: 1 }}>
+            <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", sm: "0.82rem" }, fontWeight: 500, flex: 1 }}>
               {row.contactNumber}
             </Typography>
             <IconButton size="small" sx={{ p: 0.3, color: "text.disabled", "&:hover": { color: "#25D366" } }} onClick={handleWhatsApp}>
-              <WhatsAppIcon sx={{ fontSize: 14 }} />
+              <WhatsAppIcon sx={{ fontSize: { xs: 13, sm: 14 } }} />
             </IconButton>
             <IconButton size="small" sx={{ p: 0.3, color: "text.disabled" }} onClick={handleCopy}>
-              <ContentCopyIcon sx={{ fontSize: 13 }} />
+              <ContentCopyIcon sx={{ fontSize: { xs: 12, sm: 13 } }} />
             </IconButton>
           </Stack>
 
           <Stack direction="row" alignItems="center" spacing={1}>
             <Box sx={{ width: 28, display: "flex", justifyContent: "center" }}>
-              <SchoolIcon sx={{ fontSize: 14, color: "text.disabled" }} />
+              <SchoolIcon sx={{ fontSize: { xs: 13, sm: 14 }, color: "text.disabled" }} />
             </Box>
-            <Typography variant="body2" sx={{ fontSize: "0.82rem" }}>
+            <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", sm: "0.82rem" } }}>
               Class {row.classInterested}
             </Typography>
           </Stack>
@@ -587,7 +594,7 @@ function EnquiryCard({ row, onEdit, onDelete, onViewDetail, onStatusChange, stat
           {row.followUpDate && (
             <Stack direction="row" alignItems="center" spacing={1}>
               <Box sx={{ width: 28, display: "flex", justifyContent: "center" }}>
-                <CalendarTodayIcon sx={{ fontSize: 14, color: "text.disabled" }} />
+                <CalendarTodayIcon sx={{ fontSize: { xs: 13, sm: 14 }, color: "text.disabled" }} />
               </Box>
               <FollowUpChip date={row.followUpDate} />
             </Stack>
@@ -600,14 +607,14 @@ function EnquiryCard({ row, onEdit, onDelete, onViewDetail, onStatusChange, stat
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box
             sx={{
-              px: 1.2,
+              px: { xs: 1, sm: 1.2 },
               py: 0.4,
               borderRadius: 6,
               bgcolor: alpha(BRAND.primary, 0.06),
               border: `1px solid ${alpha(BRAND.primary, 0.1)}`,
             }}
           >
-            <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, color: BRAND.primary }}>
+            <Typography sx={{ fontSize: { xs: "0.65rem", sm: "0.7rem" }, fontWeight: 600, color: BRAND.primary }}>
               {row.source || "Unknown Source"}
             </Typography>
           </Box>
@@ -618,7 +625,7 @@ function EnquiryCard({ row, onEdit, onDelete, onViewDetail, onStatusChange, stat
                 sx={{ color: "text.secondary", "&:hover": { color: BRAND.primary, bgcolor: alpha(BRAND.primary, 0.08) } }}
                 onClick={(e) => { e.stopPropagation(); onEdit(row); }}
               >
-                <EditIcon sx={{ fontSize: 15 }} />
+                <EditIcon sx={{ fontSize: { xs: 14, sm: 15 } }} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Delete">
@@ -627,7 +634,7 @@ function EnquiryCard({ row, onEdit, onDelete, onViewDetail, onStatusChange, stat
                 sx={{ color: "text.secondary", "&:hover": { color: BRAND.error, bgcolor: alpha(BRAND.error, 0.08) } }}
                 onClick={(e) => { e.stopPropagation(); onDelete(row._id); }}
               >
-                <DeleteIcon sx={{ fontSize: 15 }} />
+                <DeleteIcon sx={{ fontSize: { xs: 14, sm: 15 } }} />
               </IconButton>
             </Tooltip>
           </Stack>
@@ -947,7 +954,20 @@ function DetailDrawer({ row, open, onClose, onEdit, statusOptions, onStatusChang
 }
 
 // ─── EnquiryFormDrawer Component ──────────────────────────────────────────────
-function EnquiryFormDrawer({ open, onClose, formData, setFormData, onSubmit, editId, sourceOptions, statusOptions, classes, submitting }) {
+function EnquiryFormDrawer({
+  open,
+  onClose,
+  formData,
+  setFormData,
+  onSubmit,
+  editId,
+  sourceOptions,
+  referenceOptions,
+  statusOptions,
+  priorityOptions,
+  classes,
+  submitting,
+}) {
   const update = (key, val) => setFormData((p) => ({ ...p, [key]: val }));
 
   const sectionTitle = (title) => (
@@ -987,25 +1007,30 @@ function EnquiryFormDrawer({ open, onClose, formData, setFormData, onSubmit, edi
   };
 
   return (
-    <Drawer
-      anchor="right"
+    <Dialog
       open={open}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: "100%", sm: 500 }, display: "flex", flexDirection: "column" } }}
+      maxWidth="md"
+      fullWidth
+      fullScreen={false}
+      PaperProps={{
+        sx: {
+          borderRadius: { xs: 0, sm: 3 },
+          maxHeight: { xs: "100vh", sm: "90vh" },
+          margin: { xs: 0, sm: 2 },
+          width: { xs: "100%", sm: "auto" },
+        },
+      }}
     >
       {/* Header */}
-      <Box
+      <DialogTitle
         sx={{
-          p: 2.5,
+          p: 2,
           borderBottom: "1px solid",
           borderColor: "divider",
-          position: "sticky",
-          top: 0,
-          bgcolor: "background.paper",
-          zIndex: 10,
           background: editId
             ? `linear-gradient(90deg, ${alpha(BRAND.primaryLight, 0.06)} 0%, transparent 100%)`
-            : `linear-gradient(90deg, ${alpha(BRAND.accent, 0.08)} 0%, transparent 100%)`,
+            : `linear-gradient(90deg, ${alpha(BRAND.accent, 1.08)} 0%, transparent 100%)`,
         }}
       >
         <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -1032,7 +1057,7 @@ function EnquiryFormDrawer({ open, onClose, formData, setFormData, onSubmit, edi
               <Typography variant="h6" sx={{ fontWeight: 900, fontSize: "1rem", lineHeight: 1.1, fontFamily: "'DM Sans', sans-serif" }}>
                 {editId ? "Edit Enquiry" : "New Admission Enquiry"}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="#f9eefeff">
                 {editId ? "Update existing enquiry details" : "Register a new admission lead"}
               </Typography>
             </Box>
@@ -1041,10 +1066,10 @@ function EnquiryFormDrawer({ open, onClose, formData, setFormData, onSubmit, edi
             <CloseIcon />
           </IconButton>
         </Stack>
-      </Box>
+      </DialogTitle>
 
       {/* Form Body */}
-      <Box sx={{ flex: 1, overflowY: "auto", p: 2.5 }}>
+      <DialogContent sx={{ p: 2.5 }}>
         <Stack spacing={2}>
           {sectionTitle("Student Information")}
 
@@ -1127,9 +1152,25 @@ function EnquiryFormDrawer({ open, onClose, formData, setFormData, onSubmit, edi
 
           <Grid2 container spacing={1.5}>
             <Grid2 size={{ xs: 12, sm: 6 }}>
-              <TextField fullWidth size="small" select label="Class Interested *" value={formData.classInterested} onChange={(e) => update("classInterested", e.target.value)} sx={inputSx}>
-                {classes.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-              </TextField>
+               <Autocomplete
+                freeSolo
+                options={classes}
+                value={formData.classInterested || ""}
+                onInputChange={(_, value, reason) => {
+                  if (reason !== "reset") update("classInterested", value);
+                }}
+                onChange={(_, value) => update("classInterested", value || "")}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    fullWidth
+                    size="small"
+                    label="Class Interested *"
+                    placeholder="Select or type class"
+                    sx={inputSx}
+                  />
+                )}
+              />
             </Grid2>
             <Grid2 size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth size="small" select label="Status *" value={formData.status} onChange={(e) => update("status", e.target.value)} sx={inputSx}>
@@ -1150,8 +1191,8 @@ function EnquiryFormDrawer({ open, onClose, formData, setFormData, onSubmit, edi
             </Grid2>
             <Grid2 size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth size="small" select label="Priority" value={formData.priority || "Medium"} onChange={(e) => update("priority", e.target.value)} sx={inputSx}>
-                {["High", "Medium", "Low"].map((p) => {
-                  const cfg = PRIORITY_CONFIG[p];
+                {(priorityOptions?.length ? priorityOptions : ["High", "Medium", "Low"]).map((p) => {
+                  const cfg = PRIORITY_CONFIG[p] || PRIORITY_CONFIG.Medium;
                   return (
                     <MenuItem key={p} value={p}>
                       <Stack direction="row" alignItems="center" spacing={1}>
@@ -1198,12 +1239,22 @@ function EnquiryFormDrawer({ open, onClose, formData, setFormData, onSubmit, edi
             <Grid2 size={{ xs: 12 }}>
               <TextField
                 fullWidth size="small"
+                select
                 label="Referred By"
-                placeholder="Name of referrer (if any)"
                 value={formData.referredBy || ""}
                 onChange={(e) => update("referredBy", e.target.value)}
                 sx={inputSx}
-              />
+                helperText={referenceOptions.length === 0 ? "No references configured in Setup" : ""}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {referenceOptions.map((ref) => (
+                  <MenuItem key={ref} value={ref}>
+                    {ref}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid2>
           </Grid2>
 
@@ -1233,65 +1284,57 @@ function EnquiryFormDrawer({ open, onClose, formData, setFormData, onSubmit, edi
             }}
           />
         </Stack>
-      </Box>
+      </DialogContent>
 
       {/* Footer */}
-      <Box
+      <DialogActions
         sx={{
           p: 2.5,
           borderTop: "1px solid",
           borderColor: "divider",
-          position: "sticky",
-          bottom: 0,
-          bgcolor: "background.paper",
-          flexShrink: 0,
         }}
       >
-        <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={onClose}
-            disabled={submitting}
-            sx={{
-              borderRadius: 2.5,
-              textTransform: "none",
-              fontWeight: 700,
-              py: 1.1,
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={onSubmit}
-            disabled={submitting}
-            sx={{
-              borderRadius: 2.5,
-              textTransform: "none",
-              fontWeight: 800,
-              py: 1.1,
-              background: editId
-                ? `linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryLight} 100%)`
-                : `linear-gradient(135deg, ${BRAND.accent} 0%, ${BRAND.accentDark} 100%)`,
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          disabled={submitting}
+          sx={{
+            borderRadius: 2.5,
+            textTransform: "none",
+            fontWeight: 700,
+            px: 3,
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={onSubmit}
+          disabled={submitting}
+          sx={{
+            borderRadius: 2.5,
+            textTransform: "none",
+            fontWeight: 800,
+            px: 3,
+            background: editId
+              ? `linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryLight} 100%)`
+              : `linear-gradient(135deg, ${BRAND.accent} 0%, ${BRAND.accentDark} 100%)`,
+            boxShadow: editId
+              ? `0 4px 16px ${alpha(BRAND.primary, 0.4)}`
+              : `0 4px 16px ${alpha(BRAND.accent, 0.4)}`,
+            "&:hover": {
               boxShadow: editId
-                ? `0 4px 16px ${alpha(BRAND.primary, 0.4)}`
-                : `0 4px 16px ${alpha(BRAND.accent, 0.4)}`,
-              "&:hover": {
-                boxShadow: editId
-                  ? `0 6px 24px ${alpha(BRAND.primary, 0.5)}`
-                  : `0 6px 24px ${alpha(BRAND.accent, 0.5)}`,
-              },
-            }}
-          >
-            {submitting ? (
-              <CircularProgress size={20} sx={{ color: "white" }} />
-            ) : editId ? "Update Enquiry" : "Create Enquiry"}
-          </Button>
-        </Stack>
-      </Box>
-    </Drawer>
+                ? `0 6px 24px ${alpha(BRAND.primary, 0.5)}`
+                : `0 6px 24px ${alpha(BRAND.accent, 0.5)}`,
+            },
+          }}
+        >
+          {submitting ? (
+            <CircularProgress size={20} sx={{ color: "white" }} />
+          ) : editId ? "Update Enquiry" : "Create Enquiry"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -1350,18 +1393,28 @@ function DeleteConfirmDialog({ open, onClose, onConfirm, loading }) {
 export default function AdmissionEnquiry() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const dispatch = useDispatch();
 
-  // State
+  // ── Redux state ─────────────────────────────────────────────────────────────
+  const {
+    items: rows,
+    stats,
+    pagination,
+    statusOptions,
+    sourceOptions,
+    referenceOptions,
+    priorityOptions,
+    classes,
+    filters: reduxFilters,
+    loading,
+    submitLoading,
+    error: reduxError,
+    successMsg,
+  } = useSelector((s) => s.admissionEnquiry);
+
+  // ── Local UI state (not persisted in Redux) ──────────────────────────────────
   const [formData, setFormData] = useState(defaultForm);
-  const [rows, setRows] = useState([]);
-  const [stats, setStats] = useState([]);
-  const [sourceOptions, setSourceOptions] = useState([]);
-  const [statusOptions, setStatusOptions] = useState([]);
-  const [classes, setClasses] = useState([]);
   const [editId, setEditId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [detailRow, setDetailRow] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -1369,38 +1422,29 @@ export default function AdmissionEnquiry() {
   const [sortBy, setSortBy] = useState("createdAt_desc");
   const [filterOpen, setFilterOpen] = useState(false);
   const [snack, setSnack] = useState({ open: false, msg: "", severity: "success" });
+  const [searchInput, setSearchInput] = useState("");
   const [filters, setFilters] = useState({ q: "", status: "all", source: "all", classInterested: "all", page: 1, limit: 10 });
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, totalItems: 0, totalPages: 1 });
-  const [selectedIds, setSelectedIds] = useState([]);
   const debounceRef = useRef(null);
-
-  // Fetch
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { data } = await axios.get(`${baseUrl}/admission-enquiry`, { params: { ...filters, sortBy } });
-      setRows(data.items || []);
-      setStats(data.stats || []);
-      if (data.pagination) setPagination(data.pagination);
-      if (Array.isArray(data.sourceOptions)) setSourceOptions(data.sourceOptions);
-      if (Array.isArray(data.statusOptions)) setStatusOptions(data.statusOptions);
-      if (Array.isArray(data.classes)) setClasses(data.classes.filter(Boolean));
-      setFormData((prev) => ({
-        ...prev,
-        source: prev.source || data.sourceOptions?.[0] || "",
-        status: prev.status || data.statusOptions?.[0] || "",
-      }));
-    } catch (err) {
-      showSnack(err?.response?.data?.message || "Failed to fetch enquiries.", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, sortBy]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
 
   const showSnack = (msg, severity = "success") => setSnack({ open: true, msg, severity });
 
+  // ── Fetch via Redux ──────────────────────────────────────────────────────────
+  const fetchData = useCallback(() => {
+    dispatch(fetchEnquiries({ ...filters, sortBy }));
+  }, [dispatch, filters, sortBy]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Mirror Redux success/error to local snackbar ─────────────────────────────
+  useEffect(() => {
+    if (successMsg) { showSnack(successMsg, "success"); dispatch(clearMessages()); }
+  }, [successMsg, dispatch]);
+
+  useEffect(() => {
+    if (reduxError) { showSnack(reduxError, "error"); dispatch(clearMessages()); }
+  }, [reduxError, dispatch]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
   const updateFilter = (key, value) => {
     if (key === "q") {
       clearTimeout(debounceRef.current);
@@ -1412,42 +1456,41 @@ export default function AdmissionEnquiry() {
     }
   };
 
+  const handleSearch = (val) => {
+    setSearchInput(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, q: val, page: 1 }));
+    }, 400);
+  };
+
   const handleSubmit = async () => {
     if (!formData.studentName?.trim()) return showSnack("Student name is required.", "error");
     if (!formData.contactNumber?.trim()) return showSnack("Contact number is required.", "error");
-    if (!formData.classInterested) return showSnack("Please select class interested.", "error");
-    try {
-      setSubmitting(true);
-      if (editId) {
-        await axios.put(`${baseUrl}/admission-enquiry/${editId}`, formData);
-        showSnack("Enquiry updated successfully!");
-      } else {
-        await axios.post(`${baseUrl}/admission-enquiry`, formData);
-        showSnack("New enquiry created successfully!");
-      }
+    if (!formData.classInterested?.trim()) return showSnack("Please select or type class interested.", "error");
+
+    const payload = { ...formData, classInterested: formData.classInterested.trim() };
+    let result;
+    if (editId) {
+      result = await dispatch(updateEnquiry({ id: editId, data: payload }));
+    } else {
+      result = await dispatch(createEnquiry(payload));
+    }
+
+    if (!result.error) {
       setFormData(defaultForm);
       setEditId(null);
       setFormOpen(false);
-      fetchData();
-    } catch (err) {
-      showSnack(err?.response?.data?.message || "Unable to save enquiry.", "error");
-    } finally {
-      setSubmitting(false);
+      fetchData(); // re-fetch to sync pagination/stats
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      setDeleting(true);
-      await axios.delete(`${baseUrl}/admission-enquiry/${deleteTarget}`);
-      showSnack("Enquiry deleted successfully.");
+    const result = await dispatch(deleteEnquiry(deleteTarget));
+    if (!result.error) {
       setDeleteTarget(null);
       fetchData();
-    } catch (err) {
-      showSnack(err?.response?.data?.message || "Unable to delete.", "error");
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -1459,13 +1502,9 @@ export default function AdmissionEnquiry() {
   };
 
   const handleStatusChange = async (id, status) => {
-    try {
-      await axios.put(`${baseUrl}/admission-enquiry/${id}`, { status });
-      showSnack(`Status updated to "${status}"`);
-      setRows((prev) => prev.map((r) => r._id === id ? { ...r, status } : r));
+    const result = await dispatch(updateEnquiry({ id, data: { status } }));
+    if (!result.error) {
       if (detailRow?._id === id) setDetailRow((prev) => ({ ...prev, status }));
-    } catch {
-      showSnack("Status update failed.", "error");
     }
   };
 
@@ -1487,7 +1526,7 @@ export default function AdmissionEnquiry() {
     showSnack("CSV exported successfully!");
   };
 
-  // Computed
+  // ── Computed ──────────────────────────────────────────────────────────────────
   const total = useMemo(() => stats.reduce((sum, s) => sum + (s.count || 0), 0), [stats]);
   const statusMap = useMemo(() => Object.fromEntries(stats.map((s) => [s._id, s.count])), [stats]);
   const todayFollowUps = useMemo(() => rows.filter((r) => isToday(r.followUpDate)).length, [rows]);
@@ -1499,29 +1538,18 @@ export default function AdmissionEnquiry() {
     { label: "New Leads", value: statusMap["New"] || 0, icon: FiberNewIcon, color: BRAND.info },
     { label: "Follow-ups Due", value: statusMap["Follow-up"] || 0, icon: AccessTimeIcon, color: BRAND.warning, subtitle: overdueFollowUps > 0 ? `${overdueFollowUps} overdue` : undefined },
     { label: "Converted", value: statusMap["Converted"] || 0, icon: CheckCircleIcon, color: BRAND.success, trend: 1 },
-    { label: "Today's Follow-ups", value: todayFollowUps, icon: NotificationsActiveIcon, color: "#7c3aed" },
+    { label: "Today's Follow-ups", value: todayFollowUps, icon: NotificationsActiveIcon, color: BRAND.accent },
   ];
-
-  // Search input local state (for controlled input while debouncing)
-  const [searchInput, setSearchInput] = useState(filters.q);
-
-  const handleSearch = (val) => {
-    setSearchInput(val);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setFilters((prev) => ({ ...prev, q: val, page: 1 }));
-    }, 400);
-  };
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
     <Box
       sx={{
-        p: { xs: 1.5, md: 2.5 },
+        p: { xs: 1.5, sm: 2, md: 2.5 },
         minHeight: "100vh",
         background: theme.palette.mode === "dark"
-          ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
-          : "linear-gradient(135deg, #f8faff 0%, #f1f5f9 100%)",
+          ? "linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)"
+          : "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #ffffff 100%)",
         fontFamily: "'DM Sans', sans-serif",
       }}
     >
@@ -1587,7 +1615,7 @@ export default function AdmissionEnquiry() {
       />
 
       {/* ── Stat Cards ── */}
-      <Grid2 container spacing={2} sx={{ mb: 3, mt: 0.5 }}>
+      <Grid2 container spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: { xs: 2, md: 3 }, mt: 0.5 }}>
         {STAT_CARDS.map((s, i) => (
           <Grid2 key={s.label} size={{ xs: 6, sm: 4, md: 2.4 }}>
             <Box sx={{ animation: `${slideIn} 0.4s ease ${i * 0.07}s both` }}>
@@ -1598,7 +1626,7 @@ export default function AdmissionEnquiry() {
       </Grid2>
 
       {/* ── Toolbar ── */}
-      <GlassCard elevation={0} sx={{ p: 1.8, mb: 2, borderRadius: 3 }}>
+      <GlassCard elevation={0} sx={{ p: { xs: 1.5, sm: 1.8 }, mb: 2, borderRadius: 3 }}>
         <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
           {/* Search */}
           <TextField
@@ -1608,7 +1636,7 @@ export default function AdmissionEnquiry() {
             onChange={(e) => handleSearch(e.target.value)}
             sx={{
               flex: 1,
-              minWidth: 240,
+              minWidth: { xs: "100%", md: 240 },
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2.5,
                 bgcolor: alpha(BRAND.primary, 0.03),
@@ -1807,7 +1835,12 @@ export default function AdmissionEnquiry() {
               <EmptyState title="No enquiries found" subtitle="Try adjusting the filters or add a new enquiry to get started." />
             </Box>
           ) : (
-            <TableContainer>
+            <TableContainer sx={{ 
+              overflowX: "auto",
+              "& .MuiTable-root": {
+                minWidth: { xs: 800, md: "auto" }
+              }
+            }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -1817,13 +1850,14 @@ export default function AdmissionEnquiry() {
                         align={col === "Actions" ? "right" : "left"}
                         sx={{
                           fontWeight: 800,
-                          fontSize: "0.7rem",
+                          fontSize: { xs: "0.65rem", sm: "0.7rem" },
                           textTransform: "uppercase",
                           letterSpacing: "0.08em",
                           color: "text.secondary",
                           bgcolor: alpha(BRAND.primary, 0.04),
                           borderBottom: `2px solid ${alpha(BRAND.primary, 0.1)}`,
-                          py: 1.5,
+                          py: { xs: 1.2, sm: 1.5 },
+                          px: { xs: 1, sm: 2 },
                           fontFamily: "'DM Sans', sans-serif",
                           whiteSpace: "nowrap",
                         }}
@@ -1847,14 +1881,14 @@ export default function AdmissionEnquiry() {
                       return (
                         <StyledTableRow key={row._id}>
                           {/* Student */}
-                          <TableCell onClick={() => setDetailRow(row)} sx={{ cursor: "pointer", maxWidth: 180 }}>
+                          <TableCell onClick={() => setDetailRow(row)} sx={{ cursor: "pointer", maxWidth: 180, px: { xs: 1, sm: 2 } }}>
                             <Stack direction="row" spacing={1.3} alignItems="center">
                               <Avatar
                                 sx={{
-                                  width: 34,
-                                  height: 34,
+                                  width: { xs: 30, sm: 34 },
+                                  height: { xs: 30, sm: 34 },
                                   bgcolor: avatarColor,
-                                  fontSize: "0.75rem",
+                                  fontSize: { xs: "0.7rem", sm: "0.75rem" },
                                   fontWeight: 800,
                                   boxShadow: `0 2px 8px ${alpha(avatarColor, 0.4)}`,
                                   flexShrink: 0,
@@ -1866,7 +1900,7 @@ export default function AdmissionEnquiry() {
                                 <Typography
                                   sx={{
                                     fontWeight: 700,
-                                    fontSize: "0.85rem",
+                                    fontSize: { xs: "0.8rem", sm: "0.85rem" },
                                     lineHeight: 1.2,
                                     whiteSpace: "nowrap",
                                     overflow: "hidden",
@@ -1877,7 +1911,7 @@ export default function AdmissionEnquiry() {
                                 >
                                   {row.studentName}
                                 </Typography>
-                                <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.3 }}>
+                                <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.3, fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>
                                   {row.guardianName || "—"}
                                 </Typography>
                               </Box>
@@ -1885,60 +1919,60 @@ export default function AdmissionEnquiry() {
                           </TableCell>
 
                           {/* Contact */}
-                          <TableCell>
+                          <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
                             <Stack direction="row" alignItems="center" spacing={0.5}>
-                              <Typography sx={{ fontSize: "0.82rem", fontWeight: 500 }}>{row.contactNumber}</Typography>
+                              <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.82rem" }, fontWeight: 500 }}>{row.contactNumber}</Typography>
                               <Tooltip title="WhatsApp">
                                 <IconButton
                                   size="small"
                                   sx={{ p: 0.3, color: "#ccc", "&:hover": { color: "#25D366" } }}
                                   onClick={() => window.open(`https://wa.me/91${row.contactNumber?.replace(/\D/g, "")}`, "_blank")}
                                 >
-                                  <WhatsAppIcon sx={{ fontSize: 13 }} />
+                                  <WhatsAppIcon sx={{ fontSize: { xs: 12, sm: 13 } }} />
                                 </IconButton>
                               </Tooltip>
                             </Stack>
                             {row.email && (
-                              <Typography variant="caption" color="text.disabled" sx={{ display: "block" }}>
+                              <Typography variant="caption" color="text.disabled" sx={{ display: "block", fontSize: { xs: "0.65rem", sm: "0.7rem" } }}>
                                 {row.email}
                               </Typography>
                             )}
                           </TableCell>
 
                           {/* Class */}
-                          <TableCell>
-                            <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.3, borderRadius: 1.5, bgcolor: alpha(BRAND.primary, 0.06) }}>
-                              <SchoolIcon sx={{ fontSize: 11, color: BRAND.primary }} />
-                              <Typography sx={{ fontSize: "0.8rem", fontWeight: 700, color: BRAND.primary }}>
+                          <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+                            <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: { xs: 0.8, sm: 1 }, py: 0.3, borderRadius: 1.5, bgcolor: alpha(BRAND.primary, 0.06) }}>
+                              <SchoolIcon sx={{ fontSize: { xs: 10, sm: 11 }, color: BRAND.primary }} />
+                              <Typography sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" }, fontWeight: 700, color: BRAND.primary }}>
                                 Class {row.classInterested}
                               </Typography>
                             </Box>
                           </TableCell>
 
                           {/* Source */}
-                          <TableCell>
-                            <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>
+                          <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+                            <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.82rem" }, color: "text.secondary" }}>
                               {row.source || "—"}
                             </Typography>
                           </TableCell>
 
                           {/* Priority */}
-                          <TableCell>
+                          <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
                             <PriorityBadge priority={row.priority} />
                           </TableCell>
 
                           {/* Status */}
-                          <TableCell>
+                          <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
                             <StatusBadge status={row.status} />
                           </TableCell>
 
                           {/* Follow-up */}
-                          <TableCell>
+                          <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
                             <FollowUpChip date={row.followUpDate} />
                           </TableCell>
 
                           {/* Actions */}
-                          <TableCell align="right">
+                          <TableCell align="right" sx={{ px: { xs: 1, sm: 2 } }}>
                             <Stack direction="row" spacing={0.3} justifyContent="flex-end">
                               <Tooltip title="View Details">
                                 <IconButton
@@ -1946,7 +1980,7 @@ export default function AdmissionEnquiry() {
                                   onClick={() => setDetailRow(row)}
                                   sx={{ color: "text.disabled", "&:hover": { color: BRAND.primary, bgcolor: alpha(BRAND.primary, 0.08) } }}
                                 >
-                                  <VisibilityIcon sx={{ fontSize: 15 }} />
+                                  <VisibilityIcon sx={{ fontSize: { xs: 14, sm: 15 } }} />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Edit">
@@ -1955,7 +1989,7 @@ export default function AdmissionEnquiry() {
                                   onClick={() => handleEdit(row)}
                                   sx={{ color: "text.disabled", "&:hover": { color: BRAND.primaryLight, bgcolor: alpha(BRAND.primaryLight, 0.08) } }}
                                 >
-                                  <EditIcon sx={{ fontSize: 15 }} />
+                                  <EditIcon sx={{ fontSize: { xs: 14, sm: 15 } }} />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Delete">
@@ -1964,7 +1998,7 @@ export default function AdmissionEnquiry() {
                                   onClick={() => setDeleteTarget(row._id)}
                                   sx={{ color: "text.disabled", "&:hover": { color: BRAND.error, bgcolor: alpha(BRAND.error, 0.08) } }}
                                 >
-                                  <DeleteIcon sx={{ fontSize: 15 }} />
+                                  <DeleteIcon sx={{ fontSize: { xs: 14, sm: 15 } }} />
                                 </IconButton>
                               </Tooltip>
                             </Stack>
@@ -1983,11 +2017,11 @@ export default function AdmissionEnquiry() {
       {/* ── Grid View ── */}
       {viewMode === "grid" && (
         !loading && rows.length === 0 ? (
-          <GlassCard elevation={0} sx={{ p: 6 }}>
+          <GlassCard elevation={0} sx={{ p: { xs: 4, sm: 6 } }}>
             <EmptyState title="No enquiries found" subtitle="Try adjusting the filters or add a new enquiry." />
           </GlassCard>
         ) : (
-          <Grid2 container spacing={2}>
+          <Grid2 container spacing={{ xs: 1.5, sm: 2 }}>
             {loading
               ? Array.from({ length: 6 }).map((_, i) => (
                 <Grid2 key={i} size={{ xs: 12, sm: 6, md: 4 }}>
@@ -2014,14 +2048,14 @@ export default function AdmissionEnquiry() {
 
       {/* ── Pagination ── */}
       {!loading && rows.length > 0 && (
-        <GlassCard elevation={0} sx={{ mt: 2, p: 1.8, borderRadius: 3 }}>
+        <GlassCard elevation={0} sx={{ mt: 2, p: { xs: 1.5, sm: 1.8 }, borderRadius: 3 }}>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             justifyContent="space-between"
-            alignItems={{ xs: "flex-start", sm: "center" }}
+            alignItems={{ xs: "stretch", sm: "center" }}
             spacing={1.5}
           >
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>
               Showing page <b>{pagination.page}</b> of <b>{pagination.totalPages}</b> &nbsp;·&nbsp; Total <b>{pagination.totalItems}</b> enquiries
             </Typography>
             <Stack direction="row" spacing={1} alignItems="center">
@@ -2050,7 +2084,7 @@ export default function AdmissionEnquiry() {
                     fontFamily: "'DM Sans', sans-serif",
                   },
                   "& .Mui-selected": {
-                    background: `linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryLight} 100%) !important`,
+                    background: `linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%) !important`,
                     color: "white !important",
                   },
                 }}
@@ -2069,9 +2103,11 @@ export default function AdmissionEnquiry() {
         onSubmit={handleSubmit}
         editId={editId}
         sourceOptions={sourceOptions}
+        referenceOptions={referenceOptions}
         statusOptions={statusOptions}
+        priorityOptions={priorityOptions}
         classes={classes}
-        submitting={submitting}
+        submitting={submitLoading}
       />
 
       <DetailDrawer
@@ -2087,7 +2123,7 @@ export default function AdmissionEnquiry() {
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        loading={deleting}
+        loading={submitLoading}
       />
 
       {/* ── Snackbar ── */}

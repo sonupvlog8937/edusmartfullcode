@@ -25,6 +25,17 @@ const Schedule = lazy(() => import("./school/components/periods/Schedule"));
 const Examinations = lazy(() => import("./school/components/examinations/Examinations"));
 const NoticeSchool = lazy(() => import("./school/components/notice/NoticeSchool"));
 const AdmissionEnquiry = lazy(() => import("./school/components/front-office/AdmissionEnquiry"));
+const VisitorBook = lazy(() => import("./school/components/front-office/VisitorBook"));
+const PhoneCallLog = lazy(() => import("./school/components/front-office/PhoneCallLog"));
+const PostalRecord = lazy(() => import("./school/components/front-office/PostalRecord"));
+const Complaint    = lazy(() => import("./school/components/front-office/Complaint"));
+const SetupFrontOffice = lazy(() => import("./school/components/front-office/SetupFrontOffice"));
+const HomeworkList = lazy(() => import("./school/components/homework/HomeworkList"));
+const LibraryBooks = lazy(() => import("./school/components/library/LibraryBooks"));
+const FeesCollection = lazy(() => import("./school/components/fees/FeesCollection"));
+const TransportRoutes = lazy(() => import("./school/components/transport/TransportRoutes"));
+const StudyMaterialList = lazy(() => import("./school/components/studyMaterial/StudyMaterialList"));
+const LeaveManagement = lazy(() => import("./school/components/leave/LeaveManagement"));
 
 const Student = lazy(() => import("./student/Student"));
 const StudentDetails = lazy(() => import("./student/components/student details/StudentDetails"));
@@ -39,6 +50,32 @@ const TeacherExaminations = lazy(() => import("./teacher/components/teacher exam
 const TeacherSchedule = lazy(() => import("./teacher/components/periods/TeacherSchedule"));
 const AttendanceTeacher = lazy(() => import("./teacher/components/attendance/AttendanceTeacher"));
 const NoticeTeacher = lazy(() => import("./teacher/components/notice/Notice"));
+
+// ── Accountant ────────────────────────────────────────────────────────────────
+const Accountant = lazy(() => import("./accountant/Accountant"));
+const AccountantDetails = lazy(() => import("./accountant/components/AccountantDetails"));
+
+// ── Librarian ─────────────────────────────────────────────────────────────────
+const Librarian = lazy(() => import("./librarian/Librarian"));
+const LibrarianDetails = lazy(() => import("./librarian/components/LibrarianDetails"));
+
+// ── Receptionist ──────────────────────────────────────────────────────────────
+const Receptionist = lazy(() => import("./receptionist/Receptionist"));
+const ReceptionistDetails = lazy(() => import("./receptionist/components/ReceptionistDetails"));
+
+// ── Parent ────────────────────────────────────────────────────────────────────
+const Parent = lazy(() => import("./parent/Parent"));
+const ParentDetails = lazy(() => import("./parent/components/ParentDetails"));
+const ChildrenList = lazy(() => import("./parent/components/ChildrenList"));
+
+// ── Super Admin ───────────────────────────────────────────────────────────────
+const SuperAdmin = lazy(() => import("./superAdmin/SuperAdmin"));
+const SuperAdminDashboard = lazy(() => import("./superAdmin/components/SuperAdminDashboard"));
+
+// ── Vice Admin ────────────────────────────────────────────────────────────────
+const ViceAdmin = lazy(() => import("./viceAdmin/ViceAdmin"));
+const ViceAdminDashboard = lazy(() => import("./viceAdmin/components/ViceAdminDashboard"));
+const ViceAdminProfile   = lazy(() => import("./viceAdmin/components/ViceAdminProfile"));
 
 export default function AppRoutes() {
   return (
@@ -58,6 +95,18 @@ export default function AppRoutes() {
           <Route path="examinations" element={<Examinations />} />
           <Route path="notice" element={<NoticeSchool />} />
           <Route path="front-office/admission-enquiry" element={<AdmissionEnquiry />} />
+          <Route path="front-office/visitor-book" element={<VisitorBook />} />
+          <Route path="front-office/phone-call-log"    element={<PhoneCallLog />} />
+          <Route path="front-office/postal-receive"    element={<PostalRecord recordType="Receive" />} />
+          <Route path="front-office/postal-dispatch"   element={<PostalRecord recordType="Dispatch" />} />
+          <Route path="front-office/complain"         element={<Complaint />} />
+          <Route path="front-office/setup"            element={<SetupFrontOffice />} />
+          <Route path="homework/list" element={<HomeworkList />} />
+          <Route path="library/books" element={<LibraryBooks />} />
+          <Route path="fees/collect" element={<FeesCollection />} />
+          <Route path="transport/routes" element={<TransportRoutes />} />
+          <Route path="study-material/upload" element={<StudyMaterialList />} />
+          <Route path="leave/approve" element={<LeaveManagement />} />
         </Route>
 
         <Route path="student" element={<ProtectedRoute allowedRoles={["STUDENT"]}><Student /></ProtectedRoute>}>
@@ -76,6 +125,44 @@ export default function AppRoutes() {
           <Route path="periods" element={<TeacherSchedule />} />
           <Route path="attendance" element={<AttendanceTeacher />} />
           <Route path="notice" element={<NoticeTeacher />} />
+        </Route>
+
+        {/* ── Accountant ── */}
+        <Route path="accountant" element={<ProtectedRoute allowedRoles={["ACCOUNTANT"]}><Accountant /></ProtectedRoute>}>
+          <Route index element={<AccountantDetails />} />
+          <Route path="details" element={<AccountantDetails />} />
+        </Route>
+
+        {/* ── Librarian ── */}
+        <Route path="librarian" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Librarian /></ProtectedRoute>}>
+          <Route index element={<LibrarianDetails />} />
+          <Route path="details" element={<LibrarianDetails />} />
+        </Route>
+
+        {/* ── Receptionist ── */}
+        <Route path="receptionist" element={<ProtectedRoute allowedRoles={["RECEPTIONIST"]}><Receptionist /></ProtectedRoute>}>
+          <Route index element={<ReceptionistDetails />} />
+          <Route path="details" element={<ReceptionistDetails />} />
+        </Route>
+
+        {/* ── Parent ── */}
+        <Route path="parent" element={<ProtectedRoute allowedRoles={["PARENT"]}><Parent /></ProtectedRoute>}>
+          <Route index element={<ParentDetails />} />
+          <Route path="details" element={<ParentDetails />} />
+          <Route path="children" element={<ChildrenList />} />
+        </Route>
+
+        {/* ── Super Admin ── */}
+        <Route path="super-admin" element={<ProtectedRoute allowedRoles={["SUPERADMIN"]}><SuperAdmin /></ProtectedRoute>}>
+          <Route index element={<SuperAdminDashboard />} />
+          <Route path="dashboard" element={<SuperAdminDashboard />} />
+        </Route>
+
+        {/* ── Vice Admin ── */}
+        <Route path="vice-admin" element={<ProtectedRoute allowedRoles={["VICEADMIN"]}><ViceAdmin /></ProtectedRoute>}>
+          <Route index element={<ViceAdminDashboard />} />
+          <Route path="dashboard" element={<ViceAdminDashboard />} />
+          <Route path="profile"   element={<ViceAdminProfile />} />
         </Route>
 
         <Route path="/" element={<Client />}>

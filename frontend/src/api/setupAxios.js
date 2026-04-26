@@ -1,11 +1,14 @@
 import axios from "axios";
 
 /**
- * Global axios defaults and interceptors for production use:
- * - Sends Bearer token when present
- * - On 401/403 (except auth endpoints), clears session and redirects to login
+ * Global axios defaults and interceptors.
+ * Base URL is set WITHOUT /api suffix — individual calls include /api/...
  */
 export function setupAxios() {
+  // Base URL points to the server root, NOT /api
+  const serverRoot = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
+  axios.defaults.baseURL = serverRoot;
+
   axios.defaults.headers.common.Accept = "application/json";
 
   axios.interceptors.request.use(
@@ -27,10 +30,7 @@ export function setupAxios() {
 
       const isAuthRoute =
         url.includes("/login") ||
-        url.includes("/register") ||
-        url.endsWith("/api/school/login") ||
-        url.endsWith("/api/teacher/login") ||
-        url.endsWith("/api/student/login");
+        url.includes("/register");
 
       if ((status === 401 || status === 403) && !isAuthRoute) {
         localStorage.removeItem("token");
